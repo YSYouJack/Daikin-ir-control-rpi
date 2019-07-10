@@ -1,0 +1,2 @@
+add_subdirectory(arc433A59_ir_decoder)
+add_subdirectory(arc433A59_ir_tx)

@@ -1,0 +1,1 @@
+add_executable(arc433A59_ir_decoder arc433A59_ir_decoder.cpp)
