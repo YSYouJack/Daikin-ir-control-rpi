@@ -26,7 +26,7 @@ void ITxSender_pigpio::close()
 	if (-1 != m_pin) {
 		gpioTerminate();
 	}
-	m_isOpened = false;
+	m_pin = -1;
 }
 
 bool ITxSender_pigpio::send(const std::vector<uint8_t> &signalHeader

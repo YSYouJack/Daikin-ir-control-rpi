@@ -9,8 +9,11 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Find pigpio
-if (CMAKE_SYSTEM_NAME STREQUAL RPI)
+if (UNIX)
 	find_package(pigpio QUIET)
+
+	set(THREADS_PREFER_PTHREAD_FLAG ON)
+	find_package(Threads QUIET)
 endif ()
 
 # Find boost.
