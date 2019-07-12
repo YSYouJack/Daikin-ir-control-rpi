@@ -59,7 +59,7 @@ namespace
 
 } // anonymous namespace
 
-#if 1
+#if 0
 std::vector<uint8_t> SignalFactory::makeHeader() const
 {
 	return std::move(makeSignalHeader());

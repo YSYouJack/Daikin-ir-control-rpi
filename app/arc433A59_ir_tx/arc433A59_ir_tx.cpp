@@ -8,13 +8,13 @@
 
 namespace bpo = boost::program_options;
 
-#if 0
+#if 1
 const int GPIO_PIN = 4;
 #endif
 
 int main(int argc, char **argv)
 {
-#if 1
+#if 0
 	int gpio;
 	int temperture;
 	std::string power;
@@ -148,7 +148,8 @@ int main(int argc, char **argv)
 	}
 
 #else
-	std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::TestFile);
+	//std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::TestFile);
+	std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::Pigpio);
 	if (!txSender) {
 		std::cerr << "Error: Cannot create tx sender instance!" << std::endl;
 		return 1;

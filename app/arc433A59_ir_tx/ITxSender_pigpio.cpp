@@ -1,5 +1,6 @@
 #include "ITxSender_pigpio.h"
 #include <pigpio.h>
+#include <iostream>
 
 ITxSender_pigpio::~ITxSender_pigpio()
 {
@@ -12,13 +13,16 @@ bool ITxSender_pigpio::open(int gpioPin)
 		return false;
 	}
 
+	std::cout << "gpioPin: " << gpioPin << std::endl;
+
+
 	if (0 != gpioSetMode(gpioPin, PI_OUTPUT)) {
 		gpioTerminate();
 		return false;
 	}
 
 	m_pin = gpioPin;
-	return false;
+	return true;
 }
 
 void ITxSender_pigpio::close()
@@ -35,6 +39,8 @@ bool ITxSender_pigpio::send(const std::vector<uint8_t> &signalHeader
 	if (-1 == m_pin) {
 		return false;
 	}
+	
+	std::cout << "Send" << std::endl;
 
 	// Start bit.
 	gpioWrite(m_pin, 1); // pulse
@@ -93,5 +99,6 @@ bool ITxSender_pigpio::send(const std::vector<uint8_t> &signalHeader
 	gpioSleep(PI_TIME_RELATIVE, 0, 470);
 	gpioWrite(m_pin, 0);
 
+	std::cout << "Exit Send" << std::endl;
 	return true;
 }

@@ -7,7 +7,7 @@
 class SignalFactory
 {
 public:
-#if 1
+#if 0
 	enum class Mode : uint8_t
 	{
 		Auto   = 0x00
@@ -49,7 +49,7 @@ public:
 		, Off
 	};
 
-	std::vector<uint8_t> makeHeader(Signal signal) const;
+	std::vector<uint8_t> makeSignal(Signal signal) const;
 #endif
 };
 #endif // AC433_IR_TX_SIGNALFACTORY_H_
