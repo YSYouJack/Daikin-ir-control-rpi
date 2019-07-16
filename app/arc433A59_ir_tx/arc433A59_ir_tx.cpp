@@ -8,18 +8,14 @@
 
 namespace bpo = boost::program_options;
 
-#if 1
-const int GPIO_PIN = 4;
-#endif
-
 int main(int argc, char **argv)
 {
-#if 0
 	int gpio;
 	int temperture;
 	std::string power;
 	std::string mode;
 	std::string fan;
+	std::string engine;
 
 	bpo::options_description bOptions("arc433A59_ir_tx Options");
 	bOptions.add_options()
@@ -31,7 +27,8 @@ int main(int argc, char **argv)
 		("temperture,t", bpo::value<int>(&temperture)->default_value(25), "Temperture. [12-30]")
 		("mode,m", bpo::value<std::string>(&mode)->default_value("auto"), "Mode. [auto|dry|cold|heat|fan]")
 		("fan,f", bpo::value<std::string>(&fan)->default_value("auto"), "Fan. [auto|silent|1|2|3|4|5]")
-		("swing,s", "Swing.");
+		("swing,s", "Swing.")
+		("engine,e", bpo::value<std::string>(&engine)->default_value("pigpio"), "[file|pigpio]");
 
 	bpo::variables_map vMap;
 	try {
@@ -126,7 +123,21 @@ int main(int argc, char **argv)
 	context.isSwing = (0 < vMap.count("swing"));
 
 	// Initailize the sender.
-	std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::TestFile);
+        std::unique_ptr<ITxSender> txSender;
+	if ("pigpio" == engine) {
+#ifdef HAVE_PIGPIO
+		txSender = ITxSender::makeInstance(ITxSender::Type::Pigpio);
+#else
+		std::cerr << "Error: Cannot find pigpio on system!" << std::endl;
+		return 1;
+#endif
+	} else if ("file" == engine) {
+		txSender = ITxSender::makeInstance(ITxSender::Type::TestFile);
+	} else {
+		std::cerr << "Error: Invalie engine value " << engine << "." << std::endl;
+		return 1;
+	}
+
 	if (!txSender) {
 		std::cerr << "Error: Cannot create tx sender instance!" << std::endl;
 		return 1;
@@ -147,27 +158,5 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#else
-	//std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::TestFile);
-	std::unique_ptr<ITxSender> txSender = ITxSender::makeInstance(ITxSender::Type::Pigpio);
-	if (!txSender) {
-		std::cerr << "Error: Cannot create tx sender instance!" << std::endl;
-		return 1;
-	}
-
-	if (!txSender->open(GPIO_PIN)) {
-		std::cerr << "Error: Cannot set gpio pin to output!" << std::endl;
-		return 1;
-	}
-
-	SignalFactory signalFactory;
-	auto sHeader = signalFactory.makeSignal(SignalFactory::Signal::Header);
-	auto sOff = signalFactory.makeSignal(SignalFactory::Signal::Off);
-
-	if (!txSender->send(sHeader, sOff)) {
-		std::cerr << "Error: Cannot send OFF signal!" << std::endl;
-		return 1;
-	}
-#endif
 	return 0;
 }

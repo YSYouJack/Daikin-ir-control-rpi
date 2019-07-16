@@ -32,34 +32,8 @@ namespace
 
 		return std::move(convertTo(bytes));
 	}
-
-	// 19 bytes long: 11 da 27 00 00 01 32 00 a0 00 00 00 00 00 00 c0 00 00 a5
-	std::vector<uint8_t> makeSignalOn()
-	{
-		static std::array<uint8_t, 19> bytes = {
-			0x11, 0xda, 0x27, 0x00, 0x00, 0x01, 0x32, 0x00, 
-			0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0,
-			0x00, 0x00, 0xa5
-		};
-
-		return std::move(convertTo(bytes));
-	}
-
-	// 19 bytes long: 11 da 27 00 00 30 34 00 50 00 00 00 00 00 00 c0 00 00 86
-	std::vector<uint8_t> makeSignalOff()
-	{
-		static std::array<uint8_t, 19> bytes = {
-			0x11, 0xda, 0x27, 0x00, 0x00, 0x30, 0x34, 0x00,
-			0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0,
-			0x00, 0x00, 0x86
-		};
-
-		return std::move(convertTo(bytes));
-	}
-
 } // anonymous namespace
 
-#if 0
 std::vector<uint8_t> SignalFactory::makeHeader() const
 {
 	return std::move(makeSignalHeader());
@@ -126,20 +100,3 @@ std::vector<uint8_t> SignalFactory::makeCmd(const Context &context) const
 
 	return std::move(convertTo(bytes));
 }
-#else
-
-std::vector<uint8_t> SignalFactory::makeSignal(Signal signal) const
-{
-	switch (signal)
-	{
-	case SignalFactory::Signal::Header:
-		return std::move(makeSignalHeader());
-	case SignalFactory::Signal::On:
-		return std::move(makeSignalOn());
-	case SignalFactory::Signal::Off:
-		return std::move(makeSignalOff());
-	default:
-		return std::vector<uint8_t>();
-	}
-}
-#endif

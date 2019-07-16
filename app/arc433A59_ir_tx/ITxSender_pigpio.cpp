@@ -11,7 +11,7 @@
 #ifdef USE_WAVE
 namespace
 {
-    void generateBit(int pin
+    void addBit(int pin
         , uint32_t onDuration
         , uint32_t offDuration
         , uint32_t pulseUs
@@ -21,7 +21,8 @@ namespace
         uint32_t period = onDuration + offDuration;
         
         // Pulse.
-        uint32_t cycles = (pulseUs + period - 1) / period;
+        uint32_t cycles = static_cast<uint32_t>(static_cast<float>(pulseUs) / 26.3f);
+	std::cout << "Pulse: " << pulseUs << ", Cycle: " << cycles << ", us: " << (onDuration + offDuration) * cycles << std::endl;
         
         for (uint32_t i = 0; i < cycles; ++i) {
             gpioPulse_t on;
@@ -42,8 +43,9 @@ namespace
         // Space
         gpioPulse_t off;
         off.gpioOn = 0;
-        off.gpioOff = (1 << pin);
-        off.usDelay = spaceUs;
+        off.gpioOff = 0;
+        off.usDelay = ((spaceUs + period - 1) / period) * period - offDuration;
+	std::cout << "Space: " << off.usDelay << std::endl; 
         
         signals.emplace_back(off);
     }
@@ -53,7 +55,7 @@ namespace
         , uint32_t offDuration
         , std::vector<gpioPulse_t> &signals)
     {
-        return generateBit(pin, onDuration, offDuration, 3400, 1725, signals);
+        return addBit(pin, onDuration, offDuration, 3400, 1725, signals);
     }
     
     inline void addOneBit(int pin
@@ -61,7 +63,7 @@ namespace
         , uint32_t offDuration
         , std::vector<gpioPulse_t> &signals)
     {
-        return generateBit(pin, onDuration, offDuration, 470, 1200, signals);
+        return addBit(pin, onDuration, offDuration, 470, 1200, signals);
     }
     
     inline void addZeroBit(int pin
@@ -69,7 +71,7 @@ namespace
         , uint32_t offDuration
         , std::vector<gpioPulse_t> &signals)
     {
-        return generateBit(pin, onDuration, offDuration, 470, 400, signals);
+        return addBit(pin, onDuration, offDuration, 470, 400, signals);
     }
     
     inline void addEndBit(int pin
@@ -77,13 +79,14 @@ namespace
         , uint32_t offDuration
         , std::vector<gpioPulse_t> &signals)
     {
-        return addBit(pin, onDuration, offDuration, 470, 13400, signals);
+        return addBit(pin, onDuration, offDuration, 470, 14000, signals);
     }
 }
 
 ITxSender_pigpio::ITxSender_pigpio()
 {
     float period = 1000000.0f / static_cast<int>(m_carrier);
+    std::cout << "Period: " << period << std::endl;
     m_onUs = static_cast<uint32_t>(period * 0.5f + 0.5f);
     m_offUs = static_cast<uint32_t>(period * 0.5f + 0.5f);
 }
@@ -168,19 +171,19 @@ bool ITxSender_pigpio::send(const std::vector<uint8_t> &signalHeader
 
     // Add wave.
     gpioWaveAddGeneric(irSignal.size(), &irSignal[0]);
-    int waveID = gpioWaveCreate();
+    int wave = gpioWaveCreate();
     if (wave < 0) {
         return false;
     }
     
-    int result = gpioWaveTxSend(waveID, PI_WAVE_MODE_ONE_SHOT);
+    int result = gpioWaveTxSend(wave, PI_WAVE_MODE_ONE_SHOT);
     std::cout << "Result: " << result << std::endl;
     
     while (gpioWaveTxBusy()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
     
-    gpioWaveDelete(waveID);
+    gpioWaveDelete(wave);
     
 #else
 	// Start bit.
