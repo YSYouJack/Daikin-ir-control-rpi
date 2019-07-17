@@ -15,10 +15,10 @@ endif ()
 
 # Find pigpio
 if (pigpio_FOUND AND THREADS_FOUND)
-    set (SRCS ${SRCS} ITxSender_pigpio.cpp)
-    set (HEADERS ${HEADERS} ITxSender_pigpio.h)
+	set (SRCS ${SRCS} ITxSender_pigpio.cpp ITxSender_pigpiod.cpp)
+	set (HEADERS ${HEADERS} ITxSender_pigpio.h ITxSender_pigpio.h)
 	set(INCS ${INCS} ${pigpio_INCLUDE_DIRS})
-	set(LIBS ${LIBS} ${pigpio_LIBRARY} Threads::Threads)
+	set(LIBS ${LIBS} ${pigpio_LIBRARY} ${pigpiod_if2_LIBRARY} Threads::Threads)
 	add_definitions(-DHAVE_PIGPIO)
 else ()
 	if (CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL Darwin)

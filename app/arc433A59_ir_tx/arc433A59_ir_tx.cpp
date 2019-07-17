@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 		("mode,m", bpo::value<std::string>(&mode)->default_value("auto"), "Mode. [auto|dry|cold|heat|fan]")
 		("fan,f", bpo::value<std::string>(&fan)->default_value("auto"), "Fan. [auto|silent|1|2|3|4|5]")
 		("swing,s", "Swing.")
-		("engine,e", bpo::value<std::string>(&engine)->default_value("pigpio"), "[file|pigpio]");
+		("engine,e", bpo::value<std::string>(&engine)->default_value("file"), "[file|pigpio|pigpiod]");
 
 	bpo::variables_map vMap;
 	try {
@@ -127,6 +127,13 @@ int main(int argc, char **argv)
 	if ("pigpio" == engine) {
 #ifdef HAVE_PIGPIO
 		txSender = ITxSender::makeInstance(ITxSender::Type::Pigpio);
+#else
+		std::cerr << "Error: Cannot find pigpio on system!" << std::endl;
+		return 1;
+#endif
+	} else if ("pigpiod" == engine) {
+#ifdef HAVE_PIGPIO
+		txSender = ITxSender::makeInstance(ITxSender::Type::Pigpiod);
 #else
 		std::cerr << "Error: Cannot find pigpio on system!" << std::endl;
 		return 1;

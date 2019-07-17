@@ -22,7 +22,7 @@ namespace
         
         // Pulse.
         uint32_t cycles = static_cast<uint32_t>(static_cast<float>(pulseUs) / 26.3f);
-	std::cout << "Pulse: " << pulseUs << ", Cycle: " << cycles << ", us: " << (onDuration + offDuration) * cycles << std::endl;
+	std::cout << "Pulse: " << std::dec << pulseUs << ", Cycle: " << cycles << ", us: " << (onDuration + offDuration) * cycles << std::endl;
         
         for (uint32_t i = 0; i < cycles; ++i) {
             gpioPulse_t on;
