@@ -76,7 +76,7 @@ int readFromStream(std::istream &in)
 						isStartBit = true;
 						isPulse = false;
 						continue;
-					} else if (424 > duration) {
+					} else if (400 > duration) {
 						cerr << "Error: Pulse duration too short! " << duration << endl;
 						return 1;
 					} else if (600 < duration) {
@@ -94,7 +94,7 @@ int readFromStream(std::istream &in)
                     return 1;
                 } else {
                     int duration = atoi(line.data() + end);
-					if (1150 <= duration && 1300 >= duration) {
+					if (1100 <= duration && 1300 >= duration) {
 						if (isStartBit) {
 							cerr << "Error: Invalid startbit \"space\" duration " << duration << "us!" << endl;
 							return 1;
