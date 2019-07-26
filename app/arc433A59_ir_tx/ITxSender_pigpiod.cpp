@@ -6,6 +6,11 @@
 #include <chrono>
 #include <iostream>
 
+#define USE_WAVE_CHAIN
+#ifdef USE_WAVE_CHAIN
+#include <algorithm>
+#endif
+
 namespace
 {
 	void addBit(int pin, float carrier, uint32_t pulseUs, uint32_t spaceUs, std::vector<gpioPulse_t> &signals)
@@ -63,6 +68,101 @@ namespace
 	{
 		return addBit(pin, carrier, 470, 14000, signals);
 	}
+	
+#ifdef USE_WAVE_CHAIN
+	int createStartWave(int pigpio, int pin, float carrier)
+	{
+		std::vector<gpioPulse_t> signals;
+		addStartBit(pin, carrier, signals);
+		
+		int err = wave_add_generic(pigpio, signals.size(), &signals[0]);
+		
+		if (0 > err) {
+			std::cerr << "Error: Add start-bit wave " << pigpio_error(err) << "! " << std::endl;
+			return err;
+		}
+
+		int wave = wave_create(m_pigpio);
+		if (wave < 0) {
+			std::cerr << "Error: Create start-bit wave " << pigpio_error(err) << "!" << std::endl;
+		}
+		
+		return wave;
+	}
+	
+	int createEndWave(int pigpio, int pin, float carrier)
+	{
+		std::vector<gpioPulse_t> signals;
+		addEndBit(pin, carrier, signals);
+		
+		int err = wave_add_generic(pigpio, signals.size(), &signals[0]);
+		
+		if (0 > err) {
+			std::cerr << "Error: Add end-bit wave " << pigpio_error(err) << "! " << std::endl;
+			return err;
+		}
+
+		int wave = wave_create(pigpio);
+		if (wave < 0) {
+			std::cerr << "Error: Create end-bit wave " << pigpio_error(err) << "!" << std::endl;
+		}
+		
+		return wave;
+	}
+	
+	std::vector<int> createByteWaves(int pigpio
+		, int pin
+		, float carrier
+		, const std::vector<uint8_t> &signals)
+	{
+		assert(signals.size() % 8 == 0);
+		
+		std::vector<int> waves;
+		size_t byteCnt = signals.size() / 8;
+		for (size_t i = 0; i < byteCnt; ++i) {
+			
+			// Add to pulse sequences
+			std::vector<gpioPulse_t> pulses;
+			for (size_t j = 0; j < 8; ++j) {
+				size_t id = i * 8 + j;
+				if (signals[id]) {
+					addOneBit(m_pin, m_carrier, pulses);
+				} else {
+					addZeroBit(m_pin, m_carrier, pulses);
+				}
+			}
+			
+			// Add wave
+			int err = wave_add_generic(pigpio, pulses.size(), &pulses[0]);
+			if (0 > err) {
+				std::cerr << "Error: Add bytes wave at " << i << "th bytes! Because " 
+				          << pigpio_error(err) << "!" << std::endl;
+						  
+				for (auto w: waves) {
+					wave_delete(pigpio, w);
+				}
+				return std::vector<int>();
+			}
+			
+			// Create wave
+			int wave = wave_create(pigpio);
+			if (wave < 0) {
+				std::cerr << "Error: Create bytes wave at " << i << "th bytes! Because " 
+				          << pigpio_error(err) << "!" << std::endl;
+						  
+				for (auto w: waves) {
+					wave_delete(pigpio, w);
+				}
+				return std::vector<int>();
+			}
+			
+			waves.push_back(wave);
+		}
+		
+		return std::move(waves);
+	}
+	
+#endif 	
 }
 
 ITxSender_pigpiod::ITxSender_pigpiod()
@@ -107,18 +207,77 @@ void ITxSender_pigpiod::close()
 bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 		, const std::vector<uint8_t> &signal)
 {
+#ifdef USE_WAVE_CHAIN
+	if (-1 == m_pin) {
+		return false;
+	}
+	
+	// Create Start\End bit wave.
+	int startWaveId = createStartWave(m_pigpio, m_pin, m_carrier);
+	if (0 > startWaveId) {
+		return false;
+	}
+	
+	int endWaveId = createEndWave(m_pigpio, m_pin, m_carrier);
+	if (0 > endWaveId) {
+		wave_clear(m_pigpio);
+		return false;
+	}
+	
+	// Create bytes waves.
+	std::vector<int> headerWaveIds = createByteWaves(m_pigpio, m_pin, m_carrier, signalHeader);
+	if (headerWaveIds.empty()) {
+		std::cerr << "Create header wave failed!"  << std:endl;
+		wave_clear(m_pigpio);
+		return false;
+	}
+	
+	std::vector<int> signalWaveIds = createByteWaves(m_pigpio, m_pin, m_carrier, signal);
+	if (signalWaveIds.empty()) {
+		std::cerr << "Create signal wave failed!"  << std:endl;
+		wave_clear(m_pigpio);
+		return false;
+	}
+	
+	// Create wave chains.
+	std::vector<char> waveChain;
+	
+	waveChain.emplace_back(static_cast<char>(startWaveId));
+	for (auto w : headerWaveIds) {
+		waveChain.emplace_back(w);
+	}
+	waveChain.emplace_back(static_cast<char>(endWaveId));
+	
+	waveChain.emplace_back(static_cast<char>(startWaveId));
+	for (auto w : signalWaveIds) {
+		waveChain.emplace_back(w);
+	}
+	waveChain.emplace_back(static_cast<char>(endWaveId));
+	
+	// Send wave chain.
+	int err = wave_chain(m_pigpio, &waveChain[0], waveChain.size());
+	if (0 > err) {
+		std::cerr << "Error: Send wave chain failed " << pigpio_error(err) << "!" << std::endl;
+		wave_clear(m_pigpio);
+		return false;
+	}
+	
+	while (wave_tx_busy(m_pigpio)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+	
+	wave_clear(m_pigpio);
+	return true;
+#else	
 	if (-1 == m_pin) {
 		return false;
 	}
 
 	std::vector<gpioPulse_t> irSignal;
-#if 1
+
 	// Start bit.
-	//addStartBit(m_pin, m_carrier, irSignal);
-			addOneBit(m_pin, m_carrier, irSignal);
-			addOneBit(m_pin, m_carrier, irSignal);
-			addOneBit(m_pin, m_carrier, irSignal);
-        /*
+	addStartBit(m_pin, m_carrier, irSignal);
+	
 	// Header
 	for (auto bit : signalHeader) {
 		if (bit) {
@@ -128,11 +287,10 @@ bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 			addZeroBit(m_pin, m_carrier, irSignal);
 		}
 	}
-	*/
+	
 	// End pulse
 	addEndBit(m_pin, m_carrier, irSignal);
-#endif
-#if 0
+
 	// Start bit.
 	addStartBit(m_pin, m_carrier, irSignal);
 
@@ -148,7 +306,7 @@ bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 
 	// End pulse
 	addEndBit(m_pin, m_carrier, irSignal);
-#endif
+
 	// Create wave.
 	int err = wave_clear(m_pigpio);
 	if (0 > err) {
@@ -178,4 +336,5 @@ bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 	wave_delete(m_pigpio, wave);
 
 	return true;
+#endif
 }
