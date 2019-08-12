@@ -6,11 +6,8 @@
 #include <chrono>
 #include <iostream>
 
-#define USE_WAVE_CHAIN
-#ifdef USE_WAVE_CHAIN
 #include <cassert>
 #include <algorithm>
-#endif
 
 namespace
 {
@@ -70,7 +67,6 @@ namespace
 		return addBit(pin, carrier, 470, 14000, signals);
 	}
 	
-#ifdef USE_WAVE_CHAIN
 	int createStartWave(int pigpio, int pin, float carrier)
 	{
 		std::vector<gpioPulse_t> signals;
@@ -162,8 +158,6 @@ namespace
 		
 		return std::move(waves);
 	}
-	
-#endif 	
 }
 
 ITxSender_pigpiod::ITxSender_pigpiod()
@@ -208,7 +202,6 @@ void ITxSender_pigpiod::close()
 bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 		, const std::vector<uint8_t> &signal)
 {
-#ifdef USE_WAVE_CHAIN
 	if (-1 == m_pin) {
 		return false;
 	}
@@ -269,73 +262,4 @@ bool ITxSender_pigpiod::send(const std::vector<uint8_t> &signalHeader
 	
 	wave_clear(m_pigpio);
 	return true;
-#else	
-	if (-1 == m_pin) {
-		return false;
-	}
-
-	std::vector<gpioPulse_t> irSignal;
-
-	// Start bit.
-	addStartBit(m_pin, m_carrier, irSignal);
-	
-	// Header
-	for (auto bit : signalHeader) {
-		if (bit) {
-			addOneBit(m_pin, m_carrier, irSignal);
-		}
-		else {
-			addZeroBit(m_pin, m_carrier, irSignal);
-		}
-	}
-	
-	// End pulse
-	addEndBit(m_pin, m_carrier, irSignal);
-
-	// Start bit.
-	addStartBit(m_pin, m_carrier, irSignal);
-
-	// Message
-	for (auto bit : signal) {
-		if (bit) {
-			addOneBit(m_pin, m_carrier, irSignal);
-		}
-		else {
-			addZeroBit(m_pin, m_carrier, irSignal);
-		}
-	}
-
-	// End pulse
-	addEndBit(m_pin, m_carrier, irSignal);
-
-	// Create wave.
-	int err = wave_clear(m_pigpio);
-	if (0 > err) {
-		std::cerr << "Error: Clear wave " << pigpio_error(err) << "!" << std::endl;
-	       	return false;	
-	}
-
-	// Add wave.
-	err = wave_add_generic(m_pigpio, irSignal.size(), &irSignal[0]);
-	if (0 > err) {
-		std::cerr << "Error: Add wave " << pigpio_error(err) << "! " << irSignal.size() << std::endl;
-	       	return false;	
-	}
-
-	int wave = wave_create(m_pigpio);
-	if (wave < 0) {
-		std::cerr << "Error: Create wave " << pigpio_error(err) << "!" << std::endl;
-		return false;
-	}
-
-	int result = wave_send_once(m_pigpio, wave);
-
-	while (wave_tx_busy(m_pigpio)) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
-
-	wave_delete(m_pigpio, wave);
-
-	return true;
-#endif
 }
