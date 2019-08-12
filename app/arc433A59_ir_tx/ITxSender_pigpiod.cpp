@@ -49,22 +49,22 @@ namespace
 
 	inline void addStartBit(int pin, float carrier, std::vector<gpioPulse_t> &signals)
 	{
-		return addBit(pin, carrier, 3400, 1725, signals);
+		return addBit(pin, carrier, 3400, 1750, signals);
 	}
 
 	inline void addOneBit(int pin, float carrier, std::vector<gpioPulse_t> &signals)
 	{
-		return addBit(pin, carrier, 470, 1200, signals);
+		return addBit(pin, carrier, 430, 1320, signals);
 	}
 
 	inline void addZeroBit(int pin, float carrier, std::vector<gpioPulse_t> &signals)
 	{
-		return addBit(pin, carrier, 470, 400, signals);
+		return addBit(pin, carrier, 430, 430, signals);
 	}
 
 	inline void addEndBit(int pin, float carrier, std::vector<gpioPulse_t> &signals)
 	{
-		return addBit(pin, carrier, 470, 14000, signals);
+		return addBit(pin, carrier, 430, 35000, signals);
 	}
 	
 	int createStartWave(int pigpio, int pin, float carrier)
