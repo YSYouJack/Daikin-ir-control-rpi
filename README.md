@@ -65,4 +65,4 @@ Byte Offset     | Description                                            | Examp
 3. https://github.com/blafois/Daikin-IR-Reverse
 
 ## Contributors
-- The cmake\Findpigpio.cmake comes from [joan2937/pigpio](https://github.com/joan2937/pigpio).
+- The cmake\Findpigpio.cmake comes from the github of [joan2937/pigpio](https://github.com/joan2937/pigpio).
