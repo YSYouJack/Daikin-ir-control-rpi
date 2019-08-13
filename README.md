@@ -63,6 +63,7 @@ Byte Offset     | Description                                            | Examp
 1. https://blog.bschwind.com/2016/05/29/sending-infrared-commands-from-a-raspberry-pi-without-lirc/
 2. https://github.com/bschwind/ir-slinger
 3. https://github.com/blafois/Daikin-IR-Reverse
+4. http://www.ivancreations.com/2015/04/control-air-conditioner-with.html
 
 ## Contributors
 - The cmake\Findpigpio.cmake comes from the github of [joan2937/pigpio](https://github.com/joan2937/pigpio).
