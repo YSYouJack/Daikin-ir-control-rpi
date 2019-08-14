@@ -35,6 +35,8 @@ Bit 0                | 430               | 430
 End bits             | 430               | N/A
 Gap between ir frame | N/A               | 35000
 
+> The decoded duraiton of `ir-ctl -r` is different to above table for unknown reasons. The output bit-1 pulse length is about 530 us and space is about 300 us.
+
 ### The First Frame 8Bytes
 The 1st frame is the header. The content is fixed.
     

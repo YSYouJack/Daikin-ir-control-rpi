@@ -12,7 +12,6 @@ public:
 	{
 		TestFile
 #ifdef HAVE_PIGPIO
-		, Pigpio
 		, Pigpiod
 #endif
 	};
